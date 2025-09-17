@@ -120,13 +120,13 @@ class BiRNNSequentialEncoder(torch.nn.Module):
             raise NotImplemented("Only conv types: conv2d, lsa_conv2d implemented for outconv")
 
     def forward(self, inputs):  # , hidden=None, state=None):
-        inputs_forward, inputs_backward, seq_lengths = inputs
+        inputs_forward, inputs_backward, seq_lengths = inputs 
 
         # Desired shape for tensor in NCTHW
-        if self.shape_pattern is "NTHWC":
+        if self.shape_pattern == "NTHWC":
             inputs_forward = inputs_forward.permute(0, 4, 1, 2, 3)
             inputs_backward = inputs_backward.permute(0, 4, 1, 2, 3)
-        elif self.shape_pattern is "NTCHW":
+        elif self.shape_pattern == "NTCHW":
             # (b x t x c x h x w) -> (b x c x t x h x w)
             inputs_forward = inputs_forward.permute(0, 2, 1, 3, 4)
             inputs_backward = inputs_backward.permute(0, 2, 1, 3, 4)

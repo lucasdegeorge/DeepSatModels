@@ -122,9 +122,9 @@ class ConvGRU(nn.Module):
         # input_tensor = inputs["inputs"]
 
         # Desired shape for tensor in NTCHW
-        if self.shape_pattern is "NTHWC":
+        if self.shape_pattern == "NTHWC":
             input_tensor = input_tensor.permute(0, 1, 4, 2, 3)
-        elif self.shape_pattern is "NCTHW":
+        elif self.shape_pattern == "NCTHW":
             input_tensor = input_tensor.permute(0, 2, 1, 3, 4)
 
         # Implement stateful ConvLSTM

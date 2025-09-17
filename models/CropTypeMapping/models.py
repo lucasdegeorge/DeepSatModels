@@ -13,7 +13,7 @@ from torchvision import models
 import torchfcn
 
 from models.CropTypeMapping.constants import *
-from models.CropTypeMapping.modelling.baselines import make_rf_model
+# from models.CropTypeMapping.modelling.baselines import make_rf_model
 from models.CropTypeMapping.modelling.cgru_segmenter import CGRUSegmenter
 from models.CropTypeMapping.modelling.clstm_segmenter import CLSTMSegmenter
 from models.CropTypeMapping.modelling.util import get_num_bands
@@ -395,10 +395,11 @@ def get_model(model_name, **kwargs):
         if kwargs.get('loss_weight'):
             class_weight = 'balanced'
 
-        model = make_rf_model(random_state=kwargs.get('seed', None),
-                              n_jobs=kwargs.get('n_jobs', None),
-                              n_estimators=kwargs.get('n_estimators', 100),
-                              class_weight=class_weight)
+        # model = make_rf_model(random_state=kwargs.get('seed', None),
+        #                       n_jobs=kwargs.get('n_jobs', None),
+        #                       n_estimators=kwargs.get('n_estimators', 100),
+        #                       class_weight=class_weight)
+        raise NotImplementedError("Random Forest model not implemented in PyTorch. Please use sklearn directly.")
 
     elif model_name == 'bidir_clstm':
         num_bands = get_num_bands(kwargs)['all']
