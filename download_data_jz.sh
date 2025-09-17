@@ -22,4 +22,3 @@ wget https://zenodo.org/records/5735646/files/PASTIS-R.zip?download=1
 echo "Download finished"
 unzip 'PASTIS-R.zip?download=1'
 echo "Unzip finished"
-mv 'PASTIS-R' PASTIS-R
