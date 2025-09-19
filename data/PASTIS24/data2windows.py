@@ -5,6 +5,8 @@ import pickle
 import datetime
 import torch
 import argparse
+import ast
+import json
 
 
 def get_doy(date):
@@ -54,15 +56,41 @@ if __name__ == "__main__":
         lab = np.load(os.path.join(rootdir, 'ANNOTATIONS/TARGET_%d.npy' % meta_patch['ID_PATCH'].iloc[i]))
         ids = np.load(os.path.join(rootdir, 'ANNOTATIONS/ParcelIDs_%d.npy' % meta_patch['ID_PATCH'].iloc[i]))
         dates = meta_patch['dates-S2'].iloc[i]
-        doy = np.array([get_doy(d) for d in dates.values()])
+        if isinstance(dates, str):
+            try:
+                # Try parsing as JSON first
+                dates_dict = json.loads(dates)
+            except (json.JSONDecodeError, ValueError):
+                try:
+                    # Try parsing as Python literal (dictionary or list)
+                    dates_dict = ast.literal_eval(dates)
+                except (ValueError, SyntaxError):
+                    # If all else fails, assume it's a comma-separated string
+                    dates_dict = dates.split(',')
+        else:
+            dates_dict = dates
+        
+        # Extract date values based on the data structure
+        if isinstance(dates_dict, dict):
+            date_values = list(dates_dict.values())
+        elif isinstance(dates_dict, (list, tuple)):
+            date_values = list(dates_dict)
+        else:
+            raise ValueError(f"Unexpected dates format: {type(dates_dict)}")
+            
+        doy = np.array([get_doy(d) for d in date_values])
         idx = np.argsort(doy)
         img = img[idx]
         doy = doy[idx]
+        # print(f"img shape: {img.shape}, doy shape: {doy.shape} - labels shape: {lab.shape}")
         unfolded_images = unfold_reshape(torch.tensor(img), HWout).numpy()
         unfolded_labels = unfold_reshape(torch.tensor(lab), HWout).numpy()
+        
+        # print(f"Unfolded images shape: {unfolded_images.shape}, Unfolded labels shape: {unfolded_labels.shape}")
 
-        for j in unfolded_images.shape[0]:
+        for j in range(unfolded_images.shape[0]):
             sample = {'img': unfolded_images[j], 'labels': unfolded_labels[j], 'doy': doy}
 
             with open(os.path.join(savedir, "%d_%d.pickle" % (meta_patch['ID_PATCH'].iloc[i], j)), "wb") as output_file:
                 pickle.dump(sample, output_file)
+ 

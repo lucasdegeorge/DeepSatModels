@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(DIR))
 sys.path.append(os.path.dirname(os.path.dirname(DIR)))
 
 
-from utils.config_files_utils import get_params_values
+from utils.config_files_utils import get_params_values, read_yaml
 from models.TSViT.module import Attention, PreNorm, FeedForward
 from models.TSViT.pom_module import PoM
 
@@ -673,22 +673,26 @@ class TSViT_lookup(nn.Module):
 if __name__ == "__main__":
     res = 24
     model_config = {
-        'img_res': res, 'patch_size': 3, 'patch_size_time': 1, 'patch_time': 4, 'num_classes': 20,
-        'max_seq_len': 16, 'dim': 128, 'temporal_depth': 6, 'spatial_depth': 2,
-        'heads': 4, 'pool': 'cls', 'num_channels': 14, 'dim_head': 64, 'dropout': 0., 'emb_dropout': 0.,
+        'img_res': res, 'patch_size': 2, 'patch_size_time': 1, 'patch_time': 4, 'num_classes': 19,
+        'max_seq_len': 60, 'dim': 64, 'temporal_depth': 4, 'spatial_depth': 4,
+        'heads': 4, 'pool': 'cls', 'num_channels': 11, 'dim_head': 16, 'dropout': 0., 'emb_dropout': 0.,
         'scale_dim': 4, 'depth': 4
     }
+    
+    model_config = read_yaml("/home/lucas/Documents/GitHub/DeepSatModels/configs/PASTIS24/TSViT-S_fold1.yaml")
+    model_config = model_config['MODEL']
+    
     pom_config = {
-        'img_res': res, 'patch_size': 3, 'patch_size_time': 1, 'patch_time': 4, 'num_classes': 20,
-        'max_seq_len': 16, 'dim': 64, 'temporal_depth': 6, 'spatial_depth': 2,
-        'degree': 2, 'pool': 'cls', 'num_channels': 14, 'expand': 4, 'dropout': 0., 'emb_dropout': 0.,
+        'img_res': res, 'patch_size': 2, 'patch_size_time': 1, 'patch_time': 4, 'num_classes': 19,
+        'max_seq_len': 60, 'dim': 64, 'temporal_depth': 4, 'spatial_depth': 4,
+        'degree': 2, 'pool': 'cls', 'num_channels': 14, 'expand': 2, 'dropout': 0., 'emb_dropout': 0.,
         'scale_dim': 4, 'depth': 4
 
     }
-    train_config = {'dataset': "psetae_repl_2018_100_3", 'label_map': "labels_20k2k", 'max_seq_len': 16, 'batch_size': 5,
+    train_config = {'dataset': "psetae_repl_2018_100_3", 'label_map': "labels_20k2k", 'max_seq_len': 60, 'batch_size': 5,
                     'extra_data': [], 'num_workers': 4}
 
-    x = torch.rand((3, 16, res, res, 14)).cuda()
+    x = torch.rand((3, 60, res, res, 14)).cuda()
 
     model = TViT(model_config).cuda()
     # model = TSViPoM(pom_config).cuda()

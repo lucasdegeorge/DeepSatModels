@@ -125,6 +125,10 @@ def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
 
     if save_path and (not os.path.exists(save_path)):
         os.makedirs(save_path)
+        
+    parameters = filter(lambda p: p.requires_grad, net.parameters())
+    parameters = sum([np.prod(p.size()) for p in parameters]) / 1_000_000
+    print('Trainable Parameters: %.3fM' % parameters)
 
     copy_yaml(config)
 
@@ -276,11 +280,11 @@ def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
             wandb.summary["final_test_accuracy_macro"] = test_metrics[1]['macro']['Accuracy']
             wandb.summary["final_test_f1_macro"] = test_metrics[1]['macro']['F1']
             
-        write_mean_summaries(writer, test_metrics[1]['micro'], abs_step, mode="test_micro", optimizer=None)
-        write_mean_summaries(writer, test_metrics[1]['macro'], abs_step, mode="test_macro", optimizer=None)
-        write_class_summaries(
-            writer, [test_metrics[0], test_metrics[1]['class']], abs_step, mode="test", optimizer=None
-        )
+        # write_mean_summaries(writer, test_metrics[1]['micro'], 227500, mode="test_micro", optimizer=None)
+        # write_mean_summaries(writer, test_metrics[1]['macro'], 227500, mode="test_macro", optimizer=None)
+        # write_class_summaries(
+        #     writer, [test_metrics[0], test_metrics[1]['class']], 227500, mode="test", optimizer=None
+        # )
         
     # Finish wandb run
     if use_wandb:
