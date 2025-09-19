@@ -10,11 +10,11 @@ T31TFM_1618:
 
 # PASTIS24 benchmark -------------------------------------------------------------------------------------------------
 PASTIS24_fold1:
-    PASTIS24_fold1:
-        basedir: ".../PASTIS24"
-        paths_train: ".../fold-paths/folds_1_123_paths.csv"
-        paths_eval: ".../fold-paths/fold_4_paths.csv"
-        paths_test: ".../fold-paths/fold_5_paths.csv"
+    # PASTIS24_fold1:
+    basedir: "/home/lucas/Documents/PoM/geo/PASTIS24_25parts/PASTIS24"
+    paths_train: "/home/lucas/Documents/PoM/geo/PASTIS24_25parts/PASTIS24/fold-paths/folds_1_123_paths.csv"
+    paths_eval: "/home/lucas/Documents/PoM/geo/PASTIS24_25parts/PASTIS24/fold-paths/fold_4_paths.csv"
+    paths_test: "/home/lucas/Documents/PoM/geo/PASTIS24_25parts/PASTIS24/fold-paths/fold_5_paths.csv"
 
 PASTIS24_fold2:
     basedir: ".../PASTIS24"
