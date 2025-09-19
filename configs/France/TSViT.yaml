@@ -55,3 +55,10 @@ CHECKPOINT:
   train_metrics_steps: 1000
   eval_steps: 4000
   save_steps: 1000000
+
+WANDB:
+  use_wandb: False  # Set to True to enable wandb logging
+  wandb_project: "deepsatmodels"
+  wandb_run_name: "TSViT_France"
+  wandb_tags: ["TSViT", "France", "segmentation"]
+  wandb_log_freq: 100

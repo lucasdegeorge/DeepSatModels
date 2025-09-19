@@ -63,3 +63,10 @@ CHECKPOINT:
   train_metrics_steps: 250
   eval_steps: 2000
   save_steps: 20000000000
+
+WANDB:
+  use_wandb: True
+  wandb_project: "deepsatmodels"
+  wandb_run_name: "TSViT_fold1"
+  wandb_tags: ["TSViT", "PASTIS24", "fold1", "segmentation"]
+  wandb_log_freq: 100

@@ -7,6 +7,12 @@ import torch.nn as nn
 import torch.optim as optim
 from utils.lr_scheduler import build_scheduler
 from torch.utils.tensorboard import SummaryWriter
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
+    print("wandb not available. Install with: pip install wandb")
 import numpy as np
 import os
 from models import get_model
@@ -33,7 +39,7 @@ def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
         optimizer.step()
         return outputs, ground_truth, loss
   
-    def evaluate(net, evalloader, loss_fn, config):
+    def evaluate(net, evalloader, loss_fn, config, eval_or_test="Eval"):
         num_classes = config['MODEL']['num_classes']
         predicted_all = []
         labels_all = []
@@ -75,6 +81,7 @@ def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
 
         print(
             "-----------------------------------------------------------------------------------------------------------------------------------------------------------------")
+        print(f"-------------------------------------------- {eval_or_test} -----------------------------------------------------------------------------------------------")
         print("Mean (micro) Evaluation metrics (micro/macro), loss: %.7f, iou: %.4f/%.4f, accuracy: %.4f/%.4f, "
               "precision: %.4f/%.4f, recall: %.4f/%.4f, F1: %.4f/%.4f, unique pred labels: %s" %
               (losses.mean(), micro_IOU, macro_IOU, micro_acc, macro_acc, micro_precision, macro_precision,
@@ -121,6 +128,27 @@ def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
 
     copy_yaml(config)
 
+    # Initialize wandb if enabled
+    wandb_config = config.get('WANDB', {})
+    use_wandb = wandb_config.get('use_wandb', False) and WANDB_AVAILABLE
+    
+    if use_wandb:
+        wandb_project = wandb_config.get('wandb_project', 'deepsatmodels')
+        wandb_run_name = wandb_config.get('wandb_run_name', None)
+        wandb_tags = wandb_config.get('wandb_tags', [])
+        wandb_log_freq = wandb_config.get('wandb_log_freq', 100)
+        
+        wandb.init(
+            project=wandb_project,
+            name=wandb_run_name,
+            config=config,
+            tags=wandb_tags
+        )
+        # Log model architecture
+        wandb.watch(net, log_freq=wandb_log_freq)
+    elif wandb_config.get('use_wandb', False) and not WANDB_AVAILABLE:
+        print("WARNING: wandb logging requested but wandb is not available. Install with: pip install wandb")
+
     loss_input_fn = get_loss_data_input(config)
     
     loss_fn = {'all': get_loss(config, device, reduction=None),
@@ -153,6 +181,22 @@ def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
                     logits=logits, labels=labels, unk_masks=unk_masks, n_classes=num_classes, loss=loss, epoch=epoch,
                     step=step)
                 write_mean_summaries(writer, batch_metrics, abs_step, mode="train", optimizer=optimizer)
+                
+                # Log to wandb
+                if use_wandb:
+                    wandb_metrics = {
+                        "train/loss": loss.item(),
+                        "train/iou": batch_metrics['IOU'],
+                        "train/accuracy": batch_metrics['Accuracy'],
+                        "train/precision": batch_metrics['Precision'],
+                        "train/recall": batch_metrics['Recall'],
+                        "train/f1": batch_metrics['F1'],
+                        "train/learning_rate": optimizer.param_groups[0]['lr'],
+                        "train/epoch": epoch,
+                        "train/step": abs_step
+                    }
+                    wandb.log(wandb_metrics, step=abs_step)
+                
                 print("abs_step: %d, epoch: %d, step: %5d, loss: %.7f, batch_iou: %.4f, batch accuracy: %.4f, batch precision: %.4f, "
                       "batch recall: %.4f, batch F1: %.4f" %
                       (abs_step, epoch, step + 1, loss, batch_metrics['IOU'], batch_metrics['Accuracy'], batch_metrics['Precision'],
@@ -174,6 +218,25 @@ def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
                         torch.save(net.state_dict(), "%s/best.pth" % (save_path))
                     BEST_IOU = eval_metrics[1]['macro']['IOU']
 
+                # Log evaluation metrics to wandb
+                if use_wandb:
+                    eval_wandb_metrics = {
+                        "eval/loss_micro": eval_metrics[1]['micro']['Loss'],
+                        "eval/iou_micro": eval_metrics[1]['micro']['IOU'],
+                        "eval/accuracy_micro": eval_metrics[1]['micro']['Accuracy'],
+                        "eval/precision_micro": eval_metrics[1]['micro']['Precision'],
+                        "eval/recall_micro": eval_metrics[1]['micro']['Recall'],
+                        "eval/f1_micro": eval_metrics[1]['micro']['F1'],
+                        "eval/loss_macro": eval_metrics[1]['macro']['Loss'],
+                        "eval/iou_macro": eval_metrics[1]['macro']['IOU'],
+                        "eval/accuracy_macro": eval_metrics[1]['macro']['Accuracy'],
+                        "eval/precision_macro": eval_metrics[1]['macro']['Precision'],
+                        "eval/recall_macro": eval_metrics[1]['macro']['Recall'],
+                        "eval/f1_macro": eval_metrics[1]['macro']['F1'],
+                        "eval/best_iou": BEST_IOU,
+                        "eval/step": abs_step
+                    }
+                    wandb.log(eval_wandb_metrics, step=abs_step)
 
                 write_mean_summaries(writer, eval_metrics[1]['micro'], abs_step, mode="eval_micro", optimizer=None)
                 write_mean_summaries(writer, eval_metrics[1]['macro'], abs_step, mode="eval_macro", optimizer=None)
@@ -182,6 +245,48 @@ def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
                 net.train()
 
         scheduler.step_update(abs_step)
+        
+        
+    ### Results on the test set
+    print("Training finished, testing model on the test set...")
+    load_from_checkpoint(net, f"{save_path}/best.pth", partial_restore=False)
+    with torch.no_grad():
+        test_metrics = evaluate(net, dataloaders['test'], loss_fn, config, eval_or_test="Test")
+        
+        # Log test metrics to wandb
+        if use_wandb:
+            test_wandb_metrics = {
+                "test/loss_micro": test_metrics[1]['micro']['Loss'],
+                "test/iou_micro": test_metrics[1]['micro']['IOU'],
+                "test/accuracy_micro": test_metrics[1]['micro']['Accuracy'],
+                "test/precision_micro": test_metrics[1]['micro']['Precision'],
+                "test/recall_micro": test_metrics[1]['micro']['Recall'],
+                "test/f1_micro": test_metrics[1]['micro']['F1'],
+                "test/loss_macro": test_metrics[1]['macro']['Loss'],
+                "test/iou_macro": test_metrics[1]['macro']['IOU'],
+                "test/accuracy_macro": test_metrics[1]['macro']['Accuracy'],
+                "test/precision_macro": test_metrics[1]['macro']['Precision'],
+                "test/recall_macro": test_metrics[1]['macro']['Recall'],
+                "test/f1_macro": test_metrics[1]['macro']['F1']
+            }
+            wandb.log(test_wandb_metrics)
+            
+            # Log final summary
+            wandb.summary["final_test_iou_macro"] = test_metrics[1]['macro']['IOU']
+            wandb.summary["final_test_accuracy_macro"] = test_metrics[1]['macro']['Accuracy']
+            wandb.summary["final_test_f1_macro"] = test_metrics[1]['macro']['F1']
+            
+        write_mean_summaries(writer, test_metrics[1]['micro'], abs_step, mode="test_micro", optimizer=None)
+        write_mean_summaries(writer, test_metrics[1]['macro'], abs_step, mode="test_macro", optimizer=None)
+        write_class_summaries(
+            writer, [test_metrics[0], test_metrics[1]['class']], abs_step, mode="test", optimizer=None
+        )
+        
+    # Finish wandb run
+    if use_wandb:
+        wandb.finish()
+        
+    print('Finished Training')
 
 
 
@@ -189,7 +294,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
     parser.add_argument('--config', help='configuration (.yaml) file to use')
-    parser.add_argument('--device', default='0,1', type=str,
+    parser.add_argument('--device', default='0', type=str,
                          help='gpu ids to use')
     parser.add_argument('--lin', action='store_true',
                          help='train linear classifier only')
