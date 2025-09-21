@@ -71,7 +71,7 @@ class JeanZayExperiment:
 
         if self.gpu_type == "a100":
             self.gpu_slurm_directive = "#SBATCH -C a100"
-            self.cpus_per_task = 8
+            self.cpus_per_task = 16
             self.qos_name = self.qos_name.replace("gpu", "gpu_a100")
 
         elif self.gpu_type == "h100":
@@ -158,7 +158,6 @@ class JeanZayExperiment:
 #SBATCH --cpus-per-task={self.cpus_per_task}
 #SBATCH --hint=nomultithread
 #SBATCH --time={self.time}
-{"#SBATCH --time-min=" + self.min_time if self.min_time is not None else ""}
 #SBATCH --output={slurm_output_base_dir}.out
 #SBATCH --error={slurm_output_base_dir}.err
 #SBATCH --signal=SIGUSR1@90
@@ -169,6 +168,8 @@ source /lustre/fswork/projects/rech/fbe/uaa31dq/.venv/geopom/bin/activate
 export HYDRA_FULL_ERROR=1 # to have the full traceback
 export WANDB_CACHE_DIR=$NEWSCRATCH/wandb_cache
 export WANDB_MODE=offline
+
+unset SLURM_CPU_BIND
 
 # Define commands if using command list
 {bash_definitions}
