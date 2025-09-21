@@ -5,7 +5,7 @@ scikit-learn>=1.3.0
 scikit-image>=0.20.0
 matplotlib>=3.7.0
 pillow>=9.5.0
-pyyaml>=6.0
+pyyaml==5.3.1
 h5py>=3.8.0
 scipy>=1.10.0
 opencv-python>=4.7.0
@@ -56,6 +56,9 @@ wrapt>=1.14.0
 yapf>=0.40.0
 einops>=0.6.0
 wandb>=0.15.0
+timm
+torchfcn
+hydra-core
 
 # Manual installs (run after pip)
 # mim install mmcv
