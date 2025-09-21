@@ -15,7 +15,8 @@ sys.path.append(os.path.dirname(os.path.dirname(DIR)))
 
 from utils.config_files_utils import get_params_values, read_yaml
 from models.TSViT.module import Attention, PreNorm, FeedForward
-from models.TSViT.pom_module import PoM
+# from models.TSViT.pom_module import PoM
+from models.TSViT.compom_module import ComPoM
 
 
 
@@ -38,19 +39,21 @@ class Transformer(nn.Module):
     
     
 class PoMformer(nn.Module):
-    def __init__(self, dim, depth, degree, expand, mlp_dim, dropout=0.):
+    def __init__(self, dim, depth, degree, expand, n_groups, n_sel_heads, mlp_dim, dropout=0.):
         super().__init__()
         self.layers = nn.ModuleList([])
         self.norm = nn.LayerNorm(dim)
         for _ in range(depth):
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, PoM(dim, degree=degree, expand=expand)),
+                PreNorm(dim, ComPoM(
+                    dim, degree=degree, expand=expand, n_groups=n_groups, n_sel_heads=n_sel_heads
+                )),
                 PreNorm(dim, FeedForward(dim, mlp_dim, dropout=dropout))
             ]))
 
     def forward(self, x):
-        for attn, ff in self.layers:
-            x = attn(x) + x
+        for pom, ff in self.layers:
+            x = pom(x) + x
             x = ff(x) + x
         return self.norm(x)
 
@@ -490,8 +493,11 @@ class TSViPoM(nn.Module):
         else:
             self.spatial_depth = model_config['depth']
 
+        ## PoM parameters
         self.degree = model_config['degree']
         self.expand = model_config['expand']
+        self.n_group = model_config['n_group']
+        self.n_sel_heads = model_config['n_sel_heads']
         
         self.dropout = model_config['dropout']
         self.emb_dropout = model_config['emb_dropout']
@@ -506,11 +512,25 @@ class TSViPoM(nn.Module):
         self.to_temporal_embedding_input = nn.Linear(366, self.dim)
         self.temporal_token = nn.Parameter(torch.randn(1, self.num_classes, self.dim))
         self.temporal_transformer = PoMformer(
-            self.dim, self.temporal_depth, self.degree, self.expand, self.dim * self.scale_dim, self.dropout
+            self.dim,
+            self.temporal_depth,
+            self.degree, 
+            self.expand,
+            self.n_group,
+            self.n_sel_heads,
+            self.dim * self.scale_dim,
+            self.dropout
         )
         self.space_pos_embedding = nn.Parameter(torch.randn(1, num_patches, self.dim))
         self.space_transformer = PoMformer(
-            self.dim, self.spatial_depth, self.degree, self.expand, self.dim * self.scale_dim, self.dropout
+            self.dim,
+            self.spatial_depth,
+            self.degree, 
+            self.expand,
+            self.n_group,
+            self.n_sel_heads,
+            self.dim * self.scale_dim,
+            self.dropout,
         )
         self.dropout = nn.Dropout(self.emb_dropout)
         self.mlp_head = nn.Sequential(
@@ -687,15 +707,22 @@ if __name__ == "__main__":
         'max_seq_len': 60, 'dim': 64, 'temporal_depth': 4, 'spatial_depth': 4,
         'degree': 2, 'pool': 'cls', 'num_channels': 14, 'expand': 2, 'dropout': 0., 'emb_dropout': 0.,
         'scale_dim': 4, 'depth': 4
-
     }
+    
+    compom_config = {
+        'img_res': res, 'patch_size': 2, 'patch_size_time': 1, 'patch_time': 4, 'num_classes': 19,
+        'max_seq_len': 60, 'dim': 128, 'temporal_depth': 4, 'spatial_depth': 4,
+        'degree': 2, 'pool': 'cls', 'num_channels': 14, 'expand': 4, 'dropout': 0., 'emb_dropout': 0.,
+        'scale_dim': 4, 'depth': 4, 'n_group': 4, 'n_sel_heads': 128
+    }
+    
     train_config = {'dataset': "psetae_repl_2018_100_3", 'label_map': "labels_20k2k", 'max_seq_len': 60, 'batch_size': 5,
                     'extra_data': [], 'num_workers': 4}
 
     x = torch.rand((3, 60, res, res, 14)).cuda()
 
-    model = TViT(model_config).cuda()
-    # model = TSViPoM(pom_config).cuda()
+    # model = TViT(model_config).cuda()
+    model = TSViPoM(compom_config).cuda()
     # model = STViT(model_config)#.cuda()
     # model = TSViT_global_attention_spatial_encoder(model_config)#.cuda()
     # model = TSViT_single_token(model_config)
