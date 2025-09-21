@@ -7,6 +7,11 @@ import torch.nn as nn
 import torch.optim as optim
 from utils.lr_scheduler import build_scheduler
 from torch.utils.tensorboard import SummaryWriter
+import hydra
+from hydra.core.hydra_config import HydraConfig
+from omegaconf import OmegaConf
+
+
 try:
     import wandb
     WANDB_AVAILABLE = True
@@ -25,8 +30,8 @@ from metrics.loss_functions import get_loss
 from utils.summaries import write_mean_summaries, write_class_summaries
 from data import get_loss_data_input
 
-
-def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
+@hydra.main(config_path="../configs", config_name="config", version_base=None)
+def train_and_evaluate(cfg):
 
     def train_step(net, sample, loss_fn, optimizer, device, loss_input_fn):
         optimizer.zero_grad()
@@ -100,6 +105,19 @@ def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
                 )
 
     #------------------------------------------------------------------------------------------------------------------#
+
+    config = OmegaConf.to_container(cfg, resolve=True)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # Add local_device_ids if not present
+    if 'local_device_ids' not in config:
+        config['local_device_ids'] = [0]  # Default to single GPU
+    
+    print(config)
+    
+    net = get_model(config, device)
+    dataloaders = get_dataloaders(config)
+
     num_classes = config['MODEL']['num_classes']
     num_epochs = config['SOLVER']['num_epochs']
     lr = float(config['SOLVER']['lr_base'])
@@ -148,8 +166,6 @@ def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
             config=config,
             tags=wandb_tags
         )
-        # Log model architecture
-        wandb.watch(net, log_freq=wandb_log_freq)
     elif wandb_config.get('use_wandb', False) and not WANDB_AVAILABLE:
         print("WARNING: wandb logging requested but wandb is not available. Install with: pip install wandb")
 
@@ -295,27 +311,4 @@ def train_and_evaluate(net, dataloaders, config, device, lin_cls=False):
 
 
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
-    parser.add_argument('--config', help='configuration (.yaml) file to use')
-    parser.add_argument('--device', default='0', type=str,
-                         help='gpu ids to use')
-    parser.add_argument('--lin', action='store_true',
-                         help='train linear classifier only')
-
-    args = parser.parse_args()
-    config_file = args.config
-    print(args.device)
-    device_ids = [int(d) for d in args.device.split(',')]
-    lin_cls = args.lin
-
-    device = get_device(device_ids, allow_cpu=False)
-
-    config = read_yaml(config_file)
-    config['local_device_ids'] = device_ids
-
-    dataloaders = get_dataloaders(config)
-
-    net = get_model(config, device)
-
-    train_and_evaluate(net, dataloaders, config, device)
+    train_and_evaluate()
