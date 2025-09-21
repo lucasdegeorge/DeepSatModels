@@ -58,6 +58,7 @@ for n_sel_heads in [64, 128, 256]:
         "DATASETS.eval.dataset": "PASTIS24_JZ_fold1",
         "DATASETS.test.dataset": "PASTIS24_JZ_fold1", 
         "WANDB.wandb_run_name": exp_name,
+        "CHECKPOINT.save_path": f"models/saved_models/PASTIS24/{exp_name}",
     }
     cmd_modifiers.append(dict(**exp_modifier))
 
