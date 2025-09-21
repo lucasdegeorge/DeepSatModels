@@ -16,6 +16,13 @@ PASTIS24_fold1:
     paths_eval: "/home/lucas/Documents/PoM/geo/PASTIS24_25parts/PASTIS24/fold-paths/fold_4_paths.csv"
     paths_test: "/home/lucas/Documents/PoM/geo/PASTIS24_25parts/PASTIS24/fold-paths/fold_5_paths.csv"
 
+PASTIS24_JZ_fold1:
+    # PASTIS24_fold1:
+    basedir: "/lustre/fsn1/projects/rech/fbe/commun/datasets/PoM/geo/PASTIS24"
+    paths_train: "/lustre/fsn1/projects/rech/fbe/commun/datasets/PoM/geo/PASTIS24/fold-paths/folds_1_123_paths.csv"
+    paths_eval: "/lustre/fsn1/projects/rech/fbe/commun/datasets/PoM/geo/PASTIS24/fold-paths/fold_4_paths.csv"
+    paths_test: "/lustre/fsn1/projects/rech/fbe/commun/datasets/PoM/geo/PASTIS24/fold-paths/fold_5_paths.csv"
+
 PASTIS24_fold2:
     basedir: ".../PASTIS24"
     paths_train: ".../fold-paths/folds_2_234_paths.csv"
