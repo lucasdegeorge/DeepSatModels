@@ -20,18 +20,18 @@ jz_exp = JeanZayExperiment(exp_name, job_name)
 jz_exp.qos = "t3"
 jz_exp.account = "syq"
 jz_exp.gpu_type = computer_name
-jz_exp.time = "01:59:59"
+jz_exp.time = "14:59:59"
 jz_exp.cmd_path = "train_and_eval/segmentation_training_transf.py"
 
 exps.append(jz_exp)
 
 exp_modifier = {
     "--config-path": "../configs/PASTIS24",
-    "--config-name": "TSViComPoM-S_fold1",
+    "--config-name": "TSViT_fold1",
     "DATASETS.train.dataset": "PASTIS24_JZ_fold1",
     "DATASETS.eval.dataset": "PASTIS24_JZ_fold1",
     "DATASETS.test.dataset": "PASTIS24_JZ_fold1",
-    "WANDB.wandb_run_name": exp_name,
+    "WANDB.wandb_run_name": f"{exp_name}",
     "CHECKPOINT.save_path": f"models/saved_models/PASTIS24/{exp_name}",
 }
 

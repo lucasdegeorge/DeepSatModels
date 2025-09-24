@@ -21,7 +21,7 @@ for expand in [2, 4, 6]:
     jz_exp.qos = "t3"
     jz_exp.account = "syq"
     jz_exp.gpu_type = computer_name
-    jz_exp.time = "01:59:59"
+    jz_exp.time = "14:59:59"
     jz_exp.cmd_path = "train_and_eval/segmentation_training_transf.py"
 
     exps.append(jz_exp)
@@ -45,7 +45,7 @@ for n_sel_heads in [64, 128, 256]:
     jz_exp.qos = "t3"
     jz_exp.account = "syq"
     jz_exp.gpu_type = computer_name
-    jz_exp.time = "01:59:59"
+    jz_exp.time = "14:59:58"
     jz_exp.cmd_path = "train_and_eval/segmentation_training_transf.py"
 
     exps.append(jz_exp)
@@ -56,8 +56,8 @@ for n_sel_heads in [64, 128, 256]:
         "MODEL.n_sel_heads": n_sel_heads,
         "DATASETS.train.dataset": "PASTIS24_JZ_fold1",
         "DATASETS.eval.dataset": "PASTIS24_JZ_fold1",
-        "DATASETS.test.dataset": "PASTIS24_JZ_fold1", 
-        "WANDB.wandb_run_name": exp_name,
+        "DATASETS.test.dataset": "PASTIS24_JZ_fold1",
+        "WANDB.wandb_run_name": f"{exp_name}_2",
         "CHECKPOINT.save_path": f"models/saved_models/PASTIS24/{exp_name}",
     }
     cmd_modifiers.append(dict(**exp_modifier))

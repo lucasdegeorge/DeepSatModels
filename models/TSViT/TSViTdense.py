@@ -711,8 +711,8 @@ if __name__ == "__main__":
     
     compom_config = {
         'img_res': res, 'patch_size': 2, 'patch_size_time': 1, 'patch_time': 4, 'num_classes': 19,
-        'max_seq_len': 60, 'dim': 128, 'temporal_depth': 4, 'spatial_depth': 4,
-        'degree': 2, 'pool': 'cls', 'num_channels': 14, 'expand': 4, 'dropout': 0., 'emb_dropout': 0.,
+        'max_seq_len': 60, 'dim': 64, 'temporal_depth': 4, 'spatial_depth': 4,
+        'degree': 2, 'pool': 'cls', 'num_channels': 14, 'expand': 2, 'dropout': 0., 'emb_dropout': 0.,
         'scale_dim': 4, 'depth': 4, 'n_group': 4, 'n_sel_heads': 128
     }
     
